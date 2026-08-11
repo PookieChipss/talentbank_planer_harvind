@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Talentbank Event Calendar
 
-## Getting Started
+A career fair event calendar built for Talentbank's 3-Day Prototype Challenge (AI & Automation Engineer track). It has two parts: a public calendar for browsing career fairs, and an admin panel that lets a non-technical events team member add, edit, or cancel events without touching code.
 
-First, run the development server:
+Live demo: talentbank-planer-harvind.vercel.app Admin panel: talentbank-planer-harvind.vercel.app/admin
 
-```bash
+The Challenge
+
+Build a simple back end so a non-technical person, like someone on our events team, can add, edit, or move event dates without ever touching code. Think through what happens when events clash, get cancelled, or fill up.
+
+Features
+
+Public calendar
+
+Interactive month calendar with color-coded dots marking dates that have events
+Click a date to filter the list to that day
+Filter by state, field, and year
+Live "in X days" countdown per event
+Automatic "Fully booked" state when capacity is reached
+
+Admin panel
+
+Add, edit, and cancel events through plain forms — no code required
+Dependent State → Location dropdowns to keep data consistent
+Clash detection: creating or editing an event checks for any other active event on the same date and blocks the save with a warning if one exists
+Cancellation is non-destructive: cancelling sets a status field to cancelled instead of deleting the row, preserving history
+Capacity tracking: each event tracks capacity vs registered_count, with a badge showing seats remaining or "Fully booked"
+Search, filter, and sort the event list
+Tech Stack
+Next.js (App Router) — frontend and backend (API routes) in one project
+Supabase (Postgres) — database and data access
+Vercel — deployment, auto-redeploys on every push to main
+Project Structure
+app/
+  page.tsx              # Public calendar
+  admin/page.tsx         # Admin panel
+  api/events/route.ts    # GET (list) and POST (create, with clash check)
+  api/events/[id]/route.ts  # PUT (edit, with clash check) and DELETE (soft-cancel)
+lib/
+  supabase.ts             # Shared Supabase client
+Running Locally
+bash
+git clone https://github.com/PookieChipss/talentbank_planer_harvind.git
+cd talentbank_planer_harvind
+npm install
+
+Create a .env.local file with your own Supabase project credentials:
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+Then run the dev server:
+
+bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 for the public calendar, or http://localhost:3000/admin for the admin panel.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Database setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The events table schema (run in Supabase's SQL Editor):
 
-## Learn More
+sql
+create table events (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  event_date date not null,
+  location text,
+  state text,
+  field text,
+  capacity integer,
+  registered_count integer default 0,
+  status text default 'active' check (status in ('active', 'cancelled')),
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+Scope Decisions
 
-To learn more about Next.js, take a look at the following resources:
+Built within a 3-day window, so a few things were deliberately left out:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+No live location API — locations use a curated static list per state rather than a paid geolocation service, to avoid API key/billing setup for a prototype.
+No public registration flow — capacity and "fully booked" state are modeled and displayed, but the actual multi-step registration form wasn't built, since the brief's core ask was the admin backend.
+No authentication — the admin panel currently has open write access. A production version would lock writes to authenticated admin accounts via Supabase Row Level Security.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built by Harvind Selvam for Talentbank's Junior AI & Automation Engineer prototype challenge.
